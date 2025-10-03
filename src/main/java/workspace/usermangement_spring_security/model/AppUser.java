@@ -3,16 +3,16 @@ package workspace.usermangement_spring_security.model;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "my_app_users")
+@Table(name = "application_users")
 public class AppUser {
 
     @Id
     @SequenceGenerator(
-            name = "myappuser_sequence",
-            sequenceName = "myappuser_sequence",
+            name = "appUsers_sequence",
+            sequenceName = "appUsers_sequence",
             allocationSize = 1
     )
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "myappuser_sequence")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "appUsers_sequence")
     @Column(name = "user_id")
     private Long id;
 
