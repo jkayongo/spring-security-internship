@@ -17,20 +17,31 @@ public class JwtService {
 
      private static final String SECRET = "8E15C5D1E6EF1A52133AA234A8ACC6057704D0891DE7C60525683DEEEE038FBF3ED820BCF851599600BE1A194B88C00C1A8B574C9BBD3133911759A1B0FF414C";
 
-     private static final long VALIDITY = TimeUnit.MINUTES.toMillis(30);
+     private static final long ACCESS_TOKEN_VALIDITY = TimeUnit.MINUTES.toMillis(5);
+
+     private static final long REFRESH_TOKEN_VALIDITY = TimeUnit.DAYS.toMillis(7);
+
 
      public SecretKey generateKey(){
          byte[] decodedKey = Base64.getDecoder().decode(SECRET);
          return Keys.hmacShaKeyFor(decodedKey);
      }
 
-     public String generateToken(UserDetails userDetails){
+     public String generateAccessToken(UserDetails userDetails){
          return Jwts.builder().
                  subject(userDetails.getUsername()).
                  issuedAt(Date.from(Instant.now())).
-                 expiration(Date.from(Instant.now().plusMillis(VALIDITY))).
+                 expiration(Date.from(Instant.now().plusMillis(ACCESS_TOKEN_VALIDITY))).
                  signWith(generateKey()).
                  compact();
+     }
+
+     public String generateRefreshToken(UserDetails userDetails){
+         return Jwts.builder().subject(userDetails.getUsername()).
+                 issuedAt(Date.from(Instant.now())).
+                 expiration(Date.from(Instant.now().plusMillis(REFRESH_TOKEN_VALIDITY))).
+                 signWith(generateKey())
+                 .compact();
      }
 
     public String extractUserName(String jwt) {
@@ -49,5 +60,15 @@ public class JwtService {
     public boolean isTokenValid(String jwt) {
          Claims claims = getClaims(jwt);
          return claims.getExpiration().after(Date.from(Instant.now()));
+    }
+
+    public boolean isRefreshTokenValid(String refreshToken) {
+        Claims claims = getClaims(refreshToken);
+        return claims.getExpiration().after(Date.from(Instant.now()));
+    }
+
+    public String extractUserNameFromRefreshToken(String refreshToken) {
+        Claims claims = getClaims(refreshToken);
+        return claims.getSubject();
     }
 }

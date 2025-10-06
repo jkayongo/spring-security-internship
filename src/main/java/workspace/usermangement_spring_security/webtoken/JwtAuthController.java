@@ -1,5 +1,8 @@
 package workspace.usermangement_spring_security.webtoken;
 
+import org.apache.coyote.Response;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -26,14 +29,32 @@ public class JwtAuthController {
     }
 
     @PostMapping("/authenticate")
-    public String authenticateAndGenerateToken(@RequestBody LoginForm loginForm){
+    public ResponseEntity<TokenResponse> authenticateAndGenerateToken(@RequestBody LoginForm loginForm){
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
                 loginForm.userName(), loginForm.password()));
 
         if(authentication.isAuthenticated()){
-            return jwtService.generateToken(appUserDetailsService.loadUserByUsername(loginForm.userName()));
+            String accessToken = jwtService.generateAccessToken(appUserDetailsService.loadUserByUsername(loginForm.userName()));
+            String refreshToken = jwtService.generateRefreshToken(appUserDetailsService.loadUserByUsername(loginForm.userName()));
+            return ResponseEntity.ok(new TokenResponse(accessToken, refreshToken));
         }else{
             throw new UsernameNotFoundException("Invalid credentials");
+        }
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<TokenResponse> refresh(@RequestBody RefreshTokenRequest refreshTokenRequest){
+        String refreshToken = refreshTokenRequest.refreshToken();
+        if(refreshToken == null){
+            return ResponseEntity.badRequest().build();
+        }
+
+        if(jwtService.isRefreshTokenValid(refreshToken)) {
+            String userName = jwtService.extractUserNameFromRefreshToken(refreshToken);
+            String newAccessToken = jwtService.generateAccessToken(appUserDetailsService.loadUserByUsername(userName));
+            return ResponseEntity.ok(new TokenResponse(newAccessToken, refreshToken));
+        }else{
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
 
